@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "iphone-gps"
+version = "0.1.0"
+description = "Programmable iPhone GPS tool"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.scripts]
+iphone-gps = "iphone_gps.cli:main"
+gps = "iphone_gps.cli:gps_main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.optional-dependencies]
+device = ["pymobiledevice3==11.49.2"]
