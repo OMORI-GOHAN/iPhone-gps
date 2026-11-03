@@ -1,6 +1,6 @@
 # iPhone GPS
 
-通过开发者接口模拟 iPhone 定位，支持固定定位、连续更新、GCJ-02 坐标转换和命名地点。提供 CLI 与异步 Python API，目前面向 Arch Linux。
+通过开发者接口模拟 iPhone 定位，支持固定定位、连续更新、GCJ-02 坐标转换和命名地点。提供 CLI 与异步 Python API。Linux 已实机验证，Windows 已加入命令行适配，待实机验证。
 
 ## 项目构成
 
@@ -10,7 +10,7 @@ src/iphone_gps/
 ├── cli.py          # 命令入口
 ├── core/           # 坐标转换、数据模型和错误
 ├── backends/       # pymobiledevice3 设备适配
-├── host/           # 主机设备锁
+├── host/           # 平台路径、设备锁和退出处理
 └── features/gps/   # GPS 会话、命名地点和命令
 examples/           # 连续更新示例
 tests/              # 自动化测试
@@ -20,7 +20,7 @@ tests/              # 自动化测试
 
 ## 快速开始
 
-需要 Python 3.11+、[uv](https://docs.astral.sh/uv/) 和可用的 `usbmuxd`。
+需要 Python 3.11+ 和 [uv](https://docs.astral.sh/uv/)。Linux 需可用的 `usbmuxd`；Windows 需安装 [iTunes](https://www.apple.com/itunes/download/win64) 提供的 Apple 设备驱动与服务。
 
 ```bash
 git clone https://github.com/OMORI-GOHAN/iPhone-gps.git
@@ -32,6 +32,12 @@ uv sync --extra device
 
 ```bash
 sudo .venv/bin/python -m pymobiledevice3 remote tunneld
+```
+
+Windows 请改用管理员 PowerShell：
+
+```powershell
+.\.venv\Scripts\python.exe -m pymobiledevice3 remote tunneld
 ```
 
 检查连接；若提示需要配对或挂载 DDI，再执行 `uv run gps prepare`（可能下载镜像）：

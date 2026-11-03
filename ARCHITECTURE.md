@@ -6,7 +6,7 @@
 
 通过无需越狱的开发者定位接口控制 iPhone 的模拟位置。提供 Python 运行库、CLI 和少量基础方案，并允许用户编写轨迹插件。
 
-先在 Arch Linux 验证；系统依赖、服务操作及路径与核心分离，便于未来移植。不实现其他平台空适配器。
+Arch Linux 已完成首版实机验证；现增加原生 Windows CLI 适配，等待 Windows 实机验收。两平台维护同一份会话、坐标与地点逻辑，系统依赖、路径、设备锁和退出处理集中在 `host/`。不实现其他平台空适配器。
 
 不纳入应用安装、通用文件管理、备份、远程控制、通用手机插件平台。设备检查与开发者环境准备仅服务于 GPS。
 
@@ -104,7 +104,7 @@ async def generate(config):
 - `api.py`：公开入口。
 - `core/`：设备、坐标、检查和清理结果、错误与后端协议。
 - `backends/`：pymobiledevice3 适配。
-- `host/`：Linux 设备文件锁，防止同一用户下的跨进程争用。
+- `host/`：Linux/Windows 文件锁、用户数据路径、信号退出及设备环境提示。
 - `features/gps/`：持久会话与 GPS 命令。轨迹模型、执行器及插件按后续阶段增加。
 
 暂不为其他手机功能保留框架，不为了目录结构创建空实现。
@@ -125,3 +125,14 @@ async def generate(config):
 4. **交付体验**：命名坐标已实现；后续按需求增加依赖安装引导及前端。
 
 初版验收重点：同一连接多次更新、错误传播、取消清理、断线处理；先通过可控测试后端验证，再进行实机验证。
+
+## 9. Windows 适配与验收
+
+- 保持 `uv run gps ...`、Python API 和设备后端一致；设备依赖仍锁定 11.49.2，不自动安装主机驱动。
+- Linux 继续使用 `flock` 和原有临时锁目录；Windows 使用 `msvcrt.locking` 锁定设备文件首字节，进程退出由系统释放锁。平台模块按需导入，Windows 导入公开 API 不依赖 `fcntl`。
+- Linux 地点库路径保持不变；Windows 保存到 `%LOCALAPPDATA%/iphone-gps/places.sqlite3`，变量缺失时使用用户目录下 `AppData/Local`。SQLite 数据格式一致，不自动移动已有用户文件。
+- Linux 继续使用事件循环的信号接口；Windows 使用标准信号处理与默认 Proactor 循环的唤醒机制，支持 Ctrl+C/Ctrl+Break 取消及限时清理。强制结束进程无法承诺运行清理。
+- Windows 环境提示指向 Apple Mobile Device Service 和管理员 PowerShell。共享本地 `tunneld` 的方案不变，Windows 无需运行 Linux 的 usbmuxd 服务。
+- GitHub Actions 在 Linux/Windows、Python 3.11/3.14 上执行安装、离线命令和自动化测试。Windows 中通过子进程内触发 SIGINT 验证取消清理；实际控制台按键仍需手测。
+
+Windows 实机验收顺序：安装 Apple 设备支持组件 → USB 解锁及信任 → 安装项目依赖 → 管理员 PowerShell 启动隧道 → `devices`/`doctor` → 按提示 `gps prepare` → 固定定位及连续更新 → Ctrl+C 清理 → 拔线停止 → 命名地点重启后读取。记录 Windows、Python、iOS 版本及定位恢复耗时。自动化通过不等于手机通信或驱动通过实机验证。

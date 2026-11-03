@@ -17,7 +17,8 @@ class PlaceTests(unittest.TestCase):
     def setUp(self):
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
-        self.environment = patch.dict(os.environ, {'XDG_DATA_HOME': self.directory.name})
+        self.environment = patch.dict(os.environ, {'XDG_DATA_HOME': self.directory.name,
+                                                 'LOCALAPPDATA': self.directory.name})
         self.environment.start()
         self.addCleanup(self.environment.stop)
         self.store = PlaceStore()
@@ -31,12 +32,12 @@ class PlaceTests(unittest.TestCase):
     def test_store_persists_original_system_across_processes(self):
         self.store.save('教学楼', 28.169004, 112.945261, coord_system='gcj02')
         root = Path(__file__).resolve().parents[1]
-        env = dict(os.environ, PYTHONPATH=str(root / 'src'))
+        env = dict(os.environ, PYTHONPATH=str(root / 'src'), PYTHONUTF8='1')
         process = subprocess.run([sys.executable, '-c',
             "from iphone_gps.api import PlaceStore; p=PlaceStore().get('教学楼'); "
             "assert p.latitude==28.169004 and p.longitude==112.945261; "
             "assert p.coord_system=='gcj02'; print(p.coordinate.latitude)"],
-            env=env, cwd=self.directory.name, capture_output=True, text=True)
+            env=env, cwd=self.directory.name, capture_output=True, text=True, encoding='utf-8')
         self.assertEqual(process.returncode, 0, process.stderr)
         self.assertIn('28.172508', process.stdout)
 

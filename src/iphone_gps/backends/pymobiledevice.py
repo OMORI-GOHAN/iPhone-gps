@@ -10,9 +10,9 @@ from importlib.metadata import PackageNotFoundError, version
 
 from ..core.errors import BackendError, DependencyError, DeviceError, DeviceDisconnectedError, GpsError
 from ..core.models import Device, Readiness
+from ..host.environment import tunnel_hint, usb_hint
 
 SUPPORTED_VERSION = "11.49.2"
-TUNNEL_HINT = "请先在另一终端运行 sudo python -m pymobiledevice3 remote tunneld，再重试"
 
 
 def check_dependency():
@@ -124,7 +124,7 @@ class PymobiledeviceConnection:
                         for d in host_devices
                     ):
                         return
-                raise BackendError(f"USB 连接监测失败（{type(exc).__name__}）；请检查 usbmuxd，已停止会话") from exc
+                raise BackendError(f"USB 连接监测失败（{type(exc).__name__}），已停止会话；{usb_hint()}") from exc
             # A network pairing record must not hide the physical USB detach.
             if not any(d.is_usb and d.matches_udid(self.device.udid) for d in devices):
                 return
@@ -160,7 +160,7 @@ class PymobiledeviceBackend:
         try:
             return [Device(udid) for udid in sorted({d.serial for d in await list_devices() if d.is_usb})]
         except Exception as exc:
-            raise DeviceError("无法访问 USB 设备；请检查 usbmuxd 服务、USB 连接与访问权限") from exc
+            raise DeviceError("无法访问 USB 设备；" + usb_hint()) from exc
 
     async def _lockdown(self, device, resources, *, pair=False):
         from pymobiledevice3.lockdown import create_using_usbmux
@@ -178,7 +178,7 @@ class PymobiledeviceBackend:
             tunnels = await get_tunneld_tunnels()
             details = tunnels.get(device.udid, [])
             if not details:
-                raise DeviceError(TUNNEL_HINT)
+                raise DeviceError(tunnel_hint())
             detail = details[0]
             rsd = resources.add(RemoteServiceDiscoveryService(
                 (detail["tunnel-address"], detail["tunnel-port"]),
@@ -190,7 +190,7 @@ class PymobiledeviceBackend:
         except GpsError:
             raise
         except Exception as exc:
-            raise DeviceError("开发者隧道不可用；" + TUNNEL_HINT) from exc
+            raise DeviceError("开发者隧道不可用；" + tunnel_hint()) from exc
 
     async def _readiness(self, device, lockdown):
         from pymobiledevice3.services.mobile_image_mounter import MobileImageMounterService, image_type_for_device
@@ -219,7 +219,7 @@ class PymobiledeviceBackend:
                 except Exception:
                     tunnel = False
                 if not tunnel:
-                    issues.append(TUNNEL_HINT)
+                    issues.append(tunnel_hint())
         return Readiness(device, lockdown.all_values.get("DeviceName", "iPhone"),
                          lockdown.product_version, lockdown.paired, developer, mounted, tunnel, tuple(issues))
 
@@ -231,7 +231,7 @@ class PymobiledeviceBackend:
         except GpsError:
             raise
         except Exception as exc:
-            raise DeviceError("设备检查失败；请解锁手机并检查 USB、配对及 usbmuxd") from exc
+            raise DeviceError("设备检查失败；请检查配对；" + usb_hint()) from exc
 
     async def prepare(self, device):
         from pymobiledevice3.exceptions import AlreadyMountedError

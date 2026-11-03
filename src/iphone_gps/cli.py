@@ -8,13 +8,15 @@ import sys
 from . import __version__
 from .api import GpsError, check_device, list_devices
 from .features.gps.cli import configure_parser, print_readiness, register_parser
+from .host.environment import host_requirements, usb_hint
+from .host.signals import cancel_on_signals
 
 
 async def host_command(args):
     if args.command == "setup":
         from .backends.pymobiledevice import check_dependency
         print(f"设备依赖：pymobiledevice3 {check_dependency()}")
-        print("主机需要 usbmuxd；iOS 17+ 需要已有的本地开发者隧道。")
+        print(host_requirements())
         print("设备准备请运行 iphone-gps gps prepare；本命令不安装、不挂载。")
         return 0
     if args.command == "devices":
@@ -22,7 +24,7 @@ async def host_command(args):
         for device in devices:
             print(device.udid)
         if not devices:
-            print("未发现 USB 设备；请检查连接、解锁状态及 usbmuxd。")
+            print("未发现 USB 设备；" + usb_hint())
             return 1
         return 0
     return print_readiness(await check_device(args.device))
@@ -45,27 +47,16 @@ def build_parser():
 async def dispatch(args):
     loop = asyncio.get_running_loop()
     task = asyncio.current_task()
-    received = None
-
-    def cancel(sig):
-        nonlocal received
-        received = sig
-        task.cancel()
-
-    for sig in (signal.SIGINT, signal.SIGTERM):
-        loop.add_signal_handler(sig, cancel, sig)
-    try:
-        return await args.handler(args)
-    except asyncio.CancelledError as exc:
-        print("操作已取消，已尝试清理会话。", file=sys.stderr)
-        if args.command == "gps" and args.gps_command in ("set", "clear"):
-            print("手机位置恢复及地图刷新可能有延迟，请在手机上确认。", file=sys.stderr)
-        for note in getattr(exc, "__notes__", ()):
-            print(note, file=sys.stderr)
-        return 128 + (received or signal.SIGINT)
-    finally:
-        for sig in (signal.SIGINT, signal.SIGTERM):
-            loop.remove_signal_handler(sig)
+    with cancel_on_signals(loop, task) as cancellation:
+        try:
+            return await args.handler(args)
+        except asyncio.CancelledError as exc:
+            print("操作已取消，已尝试清理会话。", file=sys.stderr)
+            if args.command == "gps" and args.gps_command in ("set", "clear"):
+                print("手机位置恢复及地图刷新可能有延迟，请在手机上确认。", file=sys.stderr)
+            for note in getattr(exc, "__notes__", ()):
+                print(note, file=sys.stderr)
+            return 128 + (cancellation.received or signal.SIGINT)
 
 
 def main(argv=None):
