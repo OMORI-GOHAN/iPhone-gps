@@ -5,7 +5,7 @@ import sys
 
 def usb_hint() -> str:
     if sys.platform == 'win32':
-        return '请解锁手机、检查 USB 连接和 Apple Mobile Device Service；缺少驱动时安装 iTunes 提供的 Apple 设备支持组件'
+        return '请解锁手机、检查 USB 连接和 Apple Mobile Device Service；缺少组件时运行 iphone-gps setup --install，无需完整 iTunes'
     return '请解锁手机、检查 USB 连接、usbmuxd 服务及访问权限'
 
 

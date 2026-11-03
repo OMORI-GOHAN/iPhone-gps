@@ -115,7 +115,7 @@ async def generate(config):
 
 已实现：设备发现与只读准备检查、显式配对与 DDI 挂载、异步 Python 会话 API、固定定位与连续更新、清除、跨进程互斥、取消及断线处理、CLI 与预演。设备依赖作为可选项精确约束为 `pymobiledevice3==11.49.2`，已核对该版本源码并在临时环境验证真实模块接口。
 
-初版 iOS 17+ 接入已有本地 `tunneld`，不自动创建隧道或启动特权服务；检查结果给出手动启动建议。`gps prepare` 显式执行配对与 DDI 准备，可能下载镜像；开发者模式仍由用户在手机确认。`setup` 当前仅检查主机依赖。
+基础 CLI 的 iOS 17+ 接入已有本地 `tunneld`，检查结果给出手动启动建议。Windows 独立入口增加按需提权、隧道启动与清理；共享 API 保持显式管理主机资源。`gps prepare` 显式执行配对与 DDI 准备，可能下载镜像；开发者模式仍由用户在手机确认。`setup` 默认仅检查主机依赖，Windows 的 `setup --install` 显式获取、校验并安装苹果设备组件。
 
 已通过可控后端、CLI 信号退出和第三方适配边界测试。实机已通过固定定位、同一会话连续更新、Ctrl+C 退出及拔线检测。拔线复验确认识别 USB 断开、停止更新、跳过离线清除并释放本地连接资源。实现同时检查定位通道与 USB；usbmuxd 拔线后退出时通过系统 USB 列表核对。手机实际定位恢复耗时单独记录，不作为清除调用成功的证明。尚未实现：轨迹执行和插件。
 
@@ -128,7 +128,7 @@ async def generate(config):
 
 ## 9. Windows 适配与验收
 
-- 保持 `uv run gps ...`、Python API 和设备后端一致；设备依赖仍锁定 11.49.2，不自动安装主机驱动。
+- 保持 `uv run gps ...`、Python API 和设备后端一致；设备依赖仍锁定 11.49.2。默认不安装主机驱动；Windows 用户可显式运行 `setup --install`，由主机层从苹果官网获取并双重校验签名后显示设备支持组件安装界面。
 - Linux 继续使用 `flock` 和原有临时锁目录；Windows 使用 `msvcrt.locking` 锁定设备文件首字节，进程退出由系统释放锁。平台模块按需导入，Windows 导入公开 API 不依赖 `fcntl`。
 - Linux 地点库路径保持不变；Windows 保存到 `%LOCALAPPDATA%/iphone-gps/places.sqlite3`，变量缺失时使用用户目录下 `AppData/Local`。SQLite 数据格式一致，不自动移动已有用户文件。
 - Linux 继续使用事件循环的信号接口；Windows 使用标准信号处理与默认 Proactor 循环的唤醒机制，支持 Ctrl+C/Ctrl+Break 取消及限时清理。强制结束进程无法承诺运行清理。

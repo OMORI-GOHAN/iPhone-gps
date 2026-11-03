@@ -4,6 +4,7 @@ import argparse
 import asyncio
 import signal
 import sys
+import threading
 
 from . import __version__
 from .api import GpsError, check_device, list_devices
@@ -17,6 +18,30 @@ async def host_command(args):
         from .backends.pymobiledevice import check_dependency
         print(f"设备依赖：pymobiledevice3 {check_dependency()}")
         print(host_requirements())
+        if getattr(args, 'install', False):
+            if sys.platform != 'win32':
+                raise GpsError('setup --install 仅用于 Windows 的 Apple 设备组件安装')
+            from .host.windows_installer import install_components
+            cancel = threading.Event()
+            installation = asyncio.create_task(asyncio.to_thread(install_components, cancel))
+            try:
+                return await asyncio.shield(installation)
+            except asyncio.CancelledError:
+                cancel.set()
+                # Do not remove an installer's temporary files while it is running.
+                while not installation.done():
+                    try:
+                        await asyncio.shield(installation)
+                    except asyncio.CancelledError:
+                        continue
+                    except Exception:
+                        break
+                if installation.done() and not installation.cancelled():
+                    installation.exception()
+                raise
+        if sys.platform == 'win32':
+            from .host.windows_components import component_status
+            print(component_status())
         print("设备准备请运行 iphone-gps gps prepare；本命令不安装、不挂载。")
         return 0
     if args.command == "devices":
@@ -34,10 +59,13 @@ def build_parser():
     parser = argparse.ArgumentParser(prog="iphone-gps", description="可编程 iPhone GPS 工具")
     parser.add_argument("--version", action="version", version=__version__)
     commands = parser.add_subparsers(dest="command", required=True)
-    for name, description in (("setup", "检查主机依赖，不自动安装"),
+    for name, description in (("setup", "检查主机依赖；Windows 可显式安装设备组件"),
                               ("doctor", "只读检查 USB、配对及开发者环境"), ("devices", "列出 USB 设备")):
         action = commands.add_parser(name, help=description)
         action.set_defaults(handler=host_command)
+        if name == 'setup':
+            action.add_argument('--install', action='store_true',
+                                help='Windows：从苹果官网下载、校验并安装设备支持组件')
         if name == "doctor":
             action.add_argument("--device", metavar="UDID")
     register_parser(commands)
