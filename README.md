@@ -1,6 +1,6 @@
 # iPhone GPS
 
-通过开发者接口模拟 iPhone 定位，支持固定定位、连续更新、GCJ-02 坐标转换和命名地点，提供命令行与异步 Python API。Linux 和 Windows 已完成核心定位功能的实机验证。
+通过开发者接口模拟 iPhone 定位，支持固定定位、连续更新、GCJ-02 坐标转换和命名地点，提供命令行与异步 Python API。现支持Linux与Windows。
 
 根据电脑系统选择下面对应的说明。两种系统都需要通过 USB 连接 iPhone，解锁并信任电脑，在手机「设置 → 隐私与安全性」中开启开发者模式并完成重启确认。
 
@@ -44,7 +44,7 @@ uv run --no-sync gps 35.714884 139.796644
 uv run --no-sync gps --coord-system gcj02 28.169004 112.945261
 ```
 
-仅查看转换结果、不连接手机：
+仅查看转换结果：
 
 ```bash
 uv run --no-sync gps --dry-run --coord-system gcj02 28.169004 112.945261
@@ -57,12 +57,6 @@ uv run --no-sync gps place save 湖南大学 --coord-system gcj02 28.169004 112.
 uv run --no-sync gps 湖南大学
 uv run --no-sync gps place list
 uv run --no-sync gps place delete 湖南大学
-```
-
-测试同一会话内连续更新三个坐标：
-
-```bash
-uv run --no-sync python examples/continuous_updates.py --interval 10
 ```
 
 更多参数见 `uv run --no-sync gps set --help` 和 `uv run --no-sync gps place --help`。设计与 Python API 约定见 [ARCHITECTURE.md](ARCHITECTURE.md)。
@@ -81,7 +75,6 @@ uv run --no-sync python examples/continuous_updates.py --interval 10
 
 已有设备服务时会直接复用，或请求启动服务；缺少组件时从苹果官网下载约 200 MB 的安装包，校验苹果数字签名，提取并再次校验 `AppleMobileDeviceSupport64.msi`，然后打开苹果组件安装界面。确认管理员权限提示并按界面完成安装即可，无需完整安装 iTunes，也无需手动下载或解压。安装不会自动重启电脑；若提示需要重启，请完成重启后再连接手机。
 
-苹果组件在运行时从官方下载，不包含在项目压缩包中。仅检查状态而不安装时使用 `setup`。安装取消或失败后可重新执行 `setup --install`。
 
 连接并解锁手机，在解压后的 `iphone-gps` 文件夹中打开普通 PowerShell，依次检查组件和设备：
 
