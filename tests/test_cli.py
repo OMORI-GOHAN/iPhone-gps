@@ -2,10 +2,11 @@ import contextlib
 import io
 import os
 from pathlib import Path
-import select
+import queue
 import signal
 import subprocess
 import sys
+import threading
 import unittest
 from unittest.mock import patch
 
@@ -33,27 +34,43 @@ class CliTests(unittest.TestCase):
             self.assertEqual(raised.exception.code, 2)
 
     def test_signals_clear_and_close(self):
-        for sig in (signal.SIGINT, signal.SIGTERM):
+        # Windows cannot send POSIX SIGTERM or select() on a pipe. There, raise
+        # SIGINT in the child event loop to exercise the real Python handler.
+        # Physical console Ctrl+C/Ctrl+Break remains a manual acceptance check.
+        signals = (signal.SIGINT,) if sys.platform == 'win32' else (signal.SIGINT, signal.SIGTERM)
+        for sig in signals:
             code = '''
+import asyncio
+import signal
+import sys
 from test_session import Backend
 import iphone_gps.features.gps.session as sessions
-from iphone_gps.cli import main
+import iphone_gps.cli as cli
 backend = Backend()
 sessions.default_backend = lambda: backend
-status = main(['gps', 'set', '1', '2'])
+if sys.platform == 'win32':
+    original_dispatch = cli.dispatch
+    async def interrupt(args):
+        asyncio.get_running_loop().call_later(.2, signal.raise_signal, signal.SIGINT)
+        return await original_dispatch(args)
+    cli.dispatch = interrupt
+status = cli.main(['gps', 'set', '1', '2'])
 print(f'cleanup:{backend.connection.clears}:{backend.connection.closes}', flush=True)
 raise SystemExit(status)
 '''
-            env = dict(os.environ)
+            env = dict(os.environ, PYTHONUTF8='1')
             root = Path(__file__).resolve().parents[1]
             env['PYTHONPATH'] = os.pathsep.join((str(root / 'src'), str(root / 'tests')))
             process = subprocess.Popen([sys.executable, '-u', '-c', code], env=env,
-                                       stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                                       stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding='utf-8')
+            first_line = queue.Queue()
+            reader = threading.Thread(target=lambda: first_line.put(process.stdout.readline()), daemon=True)
+            reader.start()
             try:
-                readable, _, _ = select.select([process.stdout], [], [], 5)
-                self.assertTrue(readable, 'CLI did not start')
-                self.assertIn('保持连接中', process.stdout.readline())
-                process.send_signal(sig)
+                self.assertIn('保持连接中', first_line.get(timeout=5))
+                reader.join(timeout=1)
+                if sys.platform != 'win32':
+                    process.send_signal(sig)
                 stdout, stderr = process.communicate(timeout=5)
                 self.assertEqual(process.returncode, 128 + sig, stderr)
                 self.assertIn('cleanup:1:1', stdout)
@@ -61,3 +78,4 @@ raise SystemExit(status)
                 if process.poll() is None:
                     process.kill()
                 process.communicate()
+                reader.join(timeout=1)

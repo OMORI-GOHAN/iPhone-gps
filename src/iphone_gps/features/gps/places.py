@@ -2,12 +2,12 @@
 
 from contextlib import contextmanager
 from dataclasses import dataclass
-import os
 from pathlib import Path
 import sqlite3
 
 from ...core.coordinates import to_wgs84
 from ...core.errors import GpsError
+from ...host.paths import user_data_directory
 
 
 class PlaceError(GpsError):
@@ -48,9 +48,7 @@ class PlaceStore:
 
     def __init__(self, path: str | Path | None = None):
         if path is None:
-            data_home = os.environ.get("XDG_DATA_HOME")
-            base = Path(data_home) if data_home and Path(data_home).is_absolute() else Path.home() / '.local/share'
-            path = base / 'iphone-gps' / 'places.sqlite3'
+            path = user_data_directory() / 'places.sqlite3'
         self.path = Path(path)
 
     @contextmanager

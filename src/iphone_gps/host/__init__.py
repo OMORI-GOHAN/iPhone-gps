@@ -1,1 +1,1 @@
-"""Host-specific operations for the initial Linux implementation."""
+"""Host paths, device locks, console cancellation and preparation hints."""

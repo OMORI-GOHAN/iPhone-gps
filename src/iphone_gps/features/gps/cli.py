@@ -4,7 +4,7 @@ import argparse
 import asyncio
 import math
 
-from ...api import GpsError, GpsSession, PlaceStore, check_device, prepare_device, to_wgs84
+from ...api import GpsError, GpsSession, PlaceStore, check_device, prepare_device, reveal_developer_mode, to_wgs84
 
 
 def coordinate(value: str, limit: int) -> float:
@@ -39,6 +39,12 @@ def register_parser(commands):
 
 def configure_parser(gps):
     actions = gps.add_subparsers(dest="gps_command", required=True)
+    tunnel = actions.add_parser('tunnel', help='启动开发者通道（Linux，需要时请求管理员权限）')
+    tunnel.add_argument('--dry-run', action='store_true', help='只显示启动命令，不启动通道')
+    tunnel.set_defaults(handler=run_tunnel)
+    developer_mode = actions.add_parser('developer-mode', help='显示手机开发者模式入口，并提示开启步骤')
+    developer_mode.add_argument('--device', metavar='UDID', help='指定 USB 设备；多设备时必填')
+    developer_mode.set_defaults(handler=run_developer_mode)
     for name, description in (("status", "查看准备状态"), ("prepare", "配对及挂载 DDI（可能下载镜像）"),
                               ("set", "保持模拟定位直到 Ctrl+C"), ("clear", "清除模拟定位")):
         action = actions.add_parser(name, help=description)
@@ -64,6 +70,22 @@ def configure_parser(gps):
             action.add_argument("longitude", type=lambda value: coordinate(value, 180))
             action.add_argument("--coord-system", choices=("wgs84", "gcj02"), default="wgs84")
             action.add_argument("--replace", action="store_true", help="覆盖已有同名地点")
+
+
+async def run_developer_mode(args):
+    await reveal_developer_mode(args.device)
+    print('已请求显示开发者模式入口。请在手机上完成以下步骤：')
+    print('1. 重新打开 设置 → 隐私与安全性 → 开发者模式。')
+    print('2. 打开开关，按提示重新启动手机。')
+    print('3. 重启后解锁，点“开启”并按提示输入锁屏密码。')
+    print('此命令仅显示入口，不会自动开启、重启或确认。')
+    return 0
+
+
+async def run_tunnel(args):
+    from ...host.tunnel import start_tunnel
+    start_tunnel(dry_run=args.dry_run)
+    return 0
 
 
 def print_place(place):

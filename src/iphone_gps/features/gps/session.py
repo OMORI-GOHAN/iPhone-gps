@@ -7,6 +7,7 @@ from ...core.backend import Backend
 from ...core.errors import CleanupError, DeviceError, DeviceDisconnectedError, GpsError, SessionError
 from ...core.models import CleanupResult, Coordinate
 from ...host.locking import DeviceLock
+from ...host.environment import usb_hint
 
 
 def default_backend():
@@ -22,7 +23,7 @@ async def select_device(backend, udid=None):
                 return device
         raise DeviceError("指定的 USB 设备不存在，请运行 iphone-gps devices")
     if not devices:
-        raise DeviceError("未发现 USB 设备；请解锁手机、连接 USB 并检查 usbmuxd")
+        raise DeviceError("未发现 USB 设备；" + usb_hint())
     if len(devices) != 1:
         raise DeviceError("发现多台设备，请使用 --device 指定 UDID")
     return devices[0]
@@ -168,7 +169,11 @@ class GpsSession:
                         errors.append(exc)
             finally:
                 if self._device_lock is not None:
-                    self._device_lock.release()
+                    try:
+                        self._device_lock.release()
+                    except Exception as exc:
+                        released = False
+                        errors.append(exc)
                 self._state = "closed"
         self.cleanup_result = CleanupResult(cleared, released, tuple(errors), clear_skipped)
         return self.cleanup_result
