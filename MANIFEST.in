@@ -1,0 +1,4 @@
+include README.md ARCHITECTURE.md uv.lock
+recursive-include examples *.py
+recursive-include packaging *.md *.txt *.ps1 *.spec *.py
+recursive-include tests *.py

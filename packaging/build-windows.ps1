@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 Push-Location $projectRoot
 try {
@@ -13,6 +13,8 @@ try {
     Copy-Item -LiteralPath packaging/WINDOWS_README.txt -Destination dist/iphone-gps/使用说明.txt
     & .\dist\iphone-gps\iphone-gps.exe --version
     if ($LASTEXITCODE -ne 0) { throw '程序启动验证失败。' }
+    & .\dist\iphone-gps\iphone-gps.exe gps developer-mode --help
+    if ($LASTEXITCODE -ne 0) { throw '开发者模式命令验证失败。' }
     & .\dist\iphone-gps\iphone-gps.exe setup
     if ($LASTEXITCODE -ne 0) { throw '内置隧道及设备组件加载失败。' }
     & .\dist\iphone-gps\iphone-gps.exe gps set --dry-run --coord-system gcj02 28.169004 112.945261
