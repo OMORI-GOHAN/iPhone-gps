@@ -20,7 +20,7 @@ uv run --no-sync iphone-gps devices
 iOS 17 及以上需要在另一个终端启动开发者隧道，并保持该终端运行：
 
 ```bash
-sudo .venv/bin/python -m pymobiledevice3 remote tunneld
+uv run gps tunnel
 ```
 
 回到原终端检查准备状态：

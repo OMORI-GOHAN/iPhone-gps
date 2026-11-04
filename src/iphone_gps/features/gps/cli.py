@@ -39,6 +39,9 @@ def register_parser(commands):
 
 def configure_parser(gps):
     actions = gps.add_subparsers(dest="gps_command", required=True)
+    tunnel = actions.add_parser('tunnel', help='启动开发者通道（Linux，需要时请求管理员权限）')
+    tunnel.add_argument('--dry-run', action='store_true', help='只显示启动命令，不启动通道')
+    tunnel.set_defaults(handler=run_tunnel)
     for name, description in (("status", "查看准备状态"), ("prepare", "配对及挂载 DDI（可能下载镜像）"),
                               ("set", "保持模拟定位直到 Ctrl+C"), ("clear", "清除模拟定位")):
         action = actions.add_parser(name, help=description)
@@ -64,6 +67,12 @@ def configure_parser(gps):
             action.add_argument("longitude", type=lambda value: coordinate(value, 180))
             action.add_argument("--coord-system", choices=("wgs84", "gcj02"), default="wgs84")
             action.add_argument("--replace", action="store_true", help="覆盖已有同名地点")
+
+
+async def run_tunnel(args):
+    from ...host.tunnel import start_tunnel
+    start_tunnel(dry_run=args.dry_run)
+    return 0
 
 
 def print_place(place):

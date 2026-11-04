@@ -103,7 +103,7 @@ def gps_main(argv=None):
     if not arguments:
         parser.print_help()
         return 0
-    if arguments[0] not in ("set", "clear", "status", "prepare", "place", "-h", "--help", "--version"):
+    if arguments[0] not in ("set", "clear", "status", "prepare", "place", "tunnel", "-h", "--help", "--version"):
         arguments.insert(0, "set")
     return run_args(parser.parse_args(arguments))
 

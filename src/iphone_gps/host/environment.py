@@ -14,7 +14,7 @@ def tunnel_hint() -> str:
         return ('请在项目目录的管理员 PowerShell 中运行 '
                 '.\\.venv\\Scripts\\python.exe -m pymobiledevice3 remote tunneld，并保持运行')
     return ('请在项目目录的另一终端运行 '
-            'sudo .venv/bin/python -m pymobiledevice3 remote tunneld，并保持运行')
+            'uv run gps tunnel，并保持运行')
 
 
 def host_requirements() -> str:

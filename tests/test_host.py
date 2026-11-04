@@ -50,7 +50,7 @@ class HostTests(unittest.TestCase):
             self.assertNotIn('sudo', tunnel_hint())
         with patch('iphone_gps.host.environment.sys', SimpleNamespace(platform='linux')):
             self.assertIn('usbmuxd', usb_hint())
-            self.assertIn('sudo .venv/bin/python', tunnel_hint())
+            self.assertIn('uv run gps tunnel', tunnel_hint())
 
     def test_cli_restores_signal_handlers(self):
         original = {sig: signal.getsignal(sig) for sig in (signal.SIGINT, signal.SIGTERM)}
