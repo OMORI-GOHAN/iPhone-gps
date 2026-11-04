@@ -6,9 +6,6 @@ iPhone GPS Windows 测试版（x64）
   .\iphone-gps.exe setup
   .\iphone-gps.exe setup --install
   .\iphone-gps.exe devices
-  .\iphone-gps.exe doctor
-  .\iphone-gps.exe gps prepare
-  .\iphone-gps.exe gps set 35.714884 139.796644
 
 需要苹果 USB 驱动和 Apple Mobile Device Service。
 运行 setup --install 可自动从苹果官网下载、校验并提取设备支持组件。
@@ -16,8 +13,23 @@ iPhone GPS Windows 测试版（x64）
 请确认 Windows 权限提示并在苹果安装界面完成安装，无需完整 iTunes。
 下载约 200 MB，临时文件在流程结束后清理；安装不会自动重启。
 本项目不包含苹果安装文件。安装取消或失败后可再次运行 setup --install。
-安装组件后连接手机，解锁并确认信任，在手机上开启开发者模式。
+安装组件后连接手机，解锁并确认信任。
+
+开启开发者模式：
+1. 在手机打开 设置 → 隐私与安全性 → 开发者模式。
+2. 若入口未显示，在此 PowerShell 执行：
+     .\iphone-gps.exe gps developer-mode
+   然后重新打开手机设置。此命令只显示入口，不需要隧道。
+3. 打开开发者模式开关，按提示重新启动手机。
+4. 重启后解锁，点“开启”并按提示输入锁屏密码。
+程序不会自动开启、重启或代替用户确认。多设备时加 --device UDID。
+
 prepare 是显式配对与开发者镜像准备操作，可能下载镜像。
+开启开发者模式并完成重启确认后运行：
+  .\iphone-gps.exe gps prepare
+  .\iphone-gps.exe gps set 35.714884 139.796644
+只读检查状态：
+  .\iphone-gps.exe doctor
 
 iOS 17+ 定位/清除/准备命令在需要时请求管理员权限，并打开 Windows PowerShell 会话。
 窗口外壳由系统默认终端设置决定，可能仍由 Windows Terminal 承载。

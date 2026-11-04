@@ -20,6 +20,12 @@ powershell -ExecutionPolicy Bypass -File packaging/build-windows.ps1
 .\iphone-gps.exe setup
 .\iphone-gps.exe setup --install
 .\iphone-gps.exe devices
+.\iphone-gps.exe gps developer-mode
+```
+
+手机上打开「设置 → 隐私与安全性 → 开发者模式」。开启开关并按提示重启；重启后解锁，点「开启」并按提示输入锁屏密码。`gps developer-mode` 只用于显示缺失的设置入口，不自动开启或确认，不需要开发者隧道。完成后继续：
+
+```powershell
 .\iphone-gps.exe gps prepare
 .\iphone-gps.exe gps set 35.714884 139.796644
 ```

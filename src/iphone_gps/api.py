@@ -28,7 +28,14 @@ async def prepare_device(device: str | None = None, *, backend=None) -> Readines
         return await backend.prepare(await select_device(backend, device))
 
 
+async def reveal_developer_mode(device: str | None = None, *, backend=None) -> None:
+    """Reveal the Settings toggle; enabling and reboot confirmation stay manual."""
+    async with asyncio.timeout(30):
+        backend = backend or default_backend()
+        await backend.reveal_developer_mode(await select_device(backend, device))
+
+
 __all__ = ["Coordinate", "to_wgs84", "Device", "Readiness", "CleanupResult", "GpsSession",
            "PlaceStore", "SavedPlace", "PlaceError",
-           "list_devices", "check_device", "prepare_device", "GpsError", "BackendError",
+           "list_devices", "check_device", "prepare_device", "reveal_developer_mode", "GpsError", "BackendError",
            "CleanupError", "DependencyError", "DeviceBusyError", "DeviceError", "DeviceDisconnectedError", "SessionError"]

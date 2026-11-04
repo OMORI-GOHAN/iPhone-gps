@@ -28,6 +28,23 @@ class BackendTests(unittest.IsolatedAsyncioTestCase):
         with patch('pymobiledevice3.usbmux.list_devices', AsyncMock(return_value=devices)):
             self.assertEqual(await self.backend.list_devices(), [Device('usb')])
 
+    async def test_reveal_only_displays_toggle_and_releases_usb_connection(self):
+        amfi = SimpleNamespace(reveal_developer_mode_option_in_ui=AsyncMock(),
+                               enable_developer_mode=AsyncMock(),
+                               enable_developer_mode_post_restart=AsyncMock())
+        with patch('pymobiledevice3.lockdown.create_using_usbmux', AsyncMock(return_value=self.lockdown)) as create, \
+             patch('pymobiledevice3.services.amfi.AmfiService', return_value=amfi), \
+             patch('pymobiledevice3.services.mobile_image_mounter.auto_mount', AsyncMock()) as mount, \
+             patch.object(self.backend, '_remote') as remote:
+            await self.backend.reveal_developer_mode(self.device)
+        self.assertTrue(create.call_args.kwargs['autopair'])
+        amfi.reveal_developer_mode_option_in_ui.assert_awaited_once()
+        amfi.enable_developer_mode.assert_not_awaited()
+        amfi.enable_developer_mode_post_restart.assert_not_awaited()
+        self.lockdown.close.assert_awaited_once()
+        mount.assert_not_awaited()
+        remote.assert_not_called()
+
     async def test_check_does_not_pair_or_mount(self):
         with patch('pymobiledevice3.lockdown.create_using_usbmux', AsyncMock(return_value=self.lockdown)) as create, \
              patch('pymobiledevice3.services.mobile_image_mounter.MobileImageMounterService', return_value=self.mounter_context), \

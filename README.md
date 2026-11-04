@@ -17,6 +17,21 @@ uv sync --locked --extra device
 uv run --no-sync iphone-gps devices
 ```
 
+### 开启开发者模式
+
+1. 手机打开「设置 → 隐私与安全性 → 开发者模式」。如果看不到该项，保持 USB 连接、解锁并信任电脑，在项目目录执行：
+
+   ```bash
+   uv run gps developer-mode
+   ```
+
+2. 重新打开手机设置，开启「开发者模式」，按提示重启。
+3. 重启后解锁手机，在确认框中点「开启」，按提示输入锁屏密码。
+
+该命令只显示设置入口，不会自动开启或替你确认重启。多设备时加 `--device UDID`。
+
+### 启动通道与准备
+
 iOS 17 及以上需要在另一个终端启动开发者隧道，并保持该终端运行：
 
 ```bash
@@ -83,6 +98,21 @@ uv run --no-sync gps place delete 湖南大学
 .\iphone-gps.exe devices
 ```
 
+### 开启开发者模式
+
+1. 手机打开「设置 → 隐私与安全性 → 开发者模式」。如果看不到该项，保持 USB 连接、解锁并信任电脑，在程序文件夹执行：
+
+   ```powershell
+   .\iphone-gps.exe gps developer-mode
+   ```
+
+2. 重新打开手机设置，开启「开发者模式」，按提示重启。
+3. 重启后解锁手机，在确认框中点「开启」，按提示输入锁屏密码。
+
+该命令通过 USB 显示入口，无需提前开启开发者模式或启动隧道，不会自动开启、重启或确认。多设备时加 `--device UDID`。此命令需使用包含本次更新的新构建；旧测试包若提示命令不存在，请更新测试包，或使用下方源码命令。
+
+### 准备与检查
+
 `devices` 成功时会显示设备编号。首次连接或需要准备开发者镜像时运行：
 
 ```powershell
@@ -138,6 +168,12 @@ uv sync --locked --extra device
 .\.venv\Scripts\python.exe -m iphone_gps.windows setup
 .\.venv\Scripts\python.exe -m iphone_gps.windows setup --install
 .\.venv\Scripts\python.exe -m iphone_gps.windows devices
+.\.venv\Scripts\python.exe -m iphone_gps.windows gps developer-mode
+```
+
+按上方教程在手机开启开发者模式并完成重启确认后，继续：
+
+```powershell
 .\.venv\Scripts\python.exe -m iphone_gps.windows gps prepare
 .\.venv\Scripts\python.exe -m iphone_gps.windows gps set 35.714884 139.796644
 ```

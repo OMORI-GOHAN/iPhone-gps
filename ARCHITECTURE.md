@@ -95,6 +95,8 @@ async def generate(config):
 
 保留设备信任与开发者模式确认，不越狱、不绕过签名、不修改受保护系统文件。不越狱减少系统改动，不构成绝对安全保证。
 
+`gps developer-mode`（Windows 独立程序为 `iphone-gps.exe gps developer-mode`）通过 USB 的 AMFI 服务请求显示设置入口。公开 API 为 `reveal_developer_mode()`，不需要已开启的开发者模式、DDI 或隧道；首次配对保留手机上的信任确认。此操作不调用自动开启、重启或重启后接受接口，CLI 和两平台文档均引导用户在手机上手动完成开启及确认。
+
 前端未来通过 Python 服务或单独增加的本地接口接入；当前不实现网络服务。日志默认不泄露配对凭据，坐标日志需可控制。
 
 ## 7. 实现组织

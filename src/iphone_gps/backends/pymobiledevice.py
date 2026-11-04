@@ -168,6 +168,19 @@ class PymobiledeviceBackend:
             serial=device.udid, connection_type="USB", autopair=pair, pair_timeout=15))
         return lockdown
 
+    async def reveal_developer_mode(self, device):
+        from pymobiledevice3.services.amfi import AmfiService
+        try:
+            async with resources_scope() as resources:
+                lockdown = await self._lockdown(device, resources, pair=True)
+                if not lockdown.paired:
+                    raise DeviceError('请先解锁手机并确认“信任此电脑”')
+                await AmfiService(lockdown).reveal_developer_mode_option_in_ui()
+        except GpsError:
+            raise
+        except Exception as exc:
+            raise DeviceError('显示开发者模式入口失败；请解锁手机、确认信任并检查 USB 连接') from exc
+
     async def _remote(self, device, resources):
         # This helper's HTTP request is synchronous in the pinned upstream version.
         # Query asynchronously via its public tunnel-list API, then connect only
