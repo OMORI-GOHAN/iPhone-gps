@@ -62,13 +62,15 @@ uv run gps place delete 湖南大学
 
 ### 安装
 
-使用 Windows x64 测试包 `iphone-gps-windows-x64.zip`，无需另装 Python 或 uv。解压整个压缩包，保留 `_internal` 文件夹。在程序文件夹打开普通 PowerShell，安装 Apple 设备组件：
+测试包获取及构建方式见 [Windows 打包说明](packaging/README.md)。
+
+使用 Windows x64 测试包 `iphone-gps-windows-x64.zip`。解压整个压缩包，保留 `_internal` 文件夹。在程序文件夹打开普通 PowerShell，安装 Apple 设备组件：
 
 ```powershell
 .\iphone-gps.exe setup --install
 ```
 
-按提示确认管理员权限并完成安装；若要求重启电脑，重启后再连接手机。测试包获取及构建方式见 [Windows 打包说明](packaging/README.md)。
+按提示确认管理员权限并完成安装；若要求重启电脑，重启后再连接手机。
 
 ### 开启开发者模式
 
