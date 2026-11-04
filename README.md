@@ -1,152 +1,107 @@
 # iPhone GPS
 
-通过开发者接口模拟 iPhone 定位，支持固定定位、连续更新、GCJ-02 坐标转换和命名地点，提供命令行与异步 Python API。现支持Linux与Windows。
+通过开发者接口模拟 iPhone 定位，支持固定定位、连续更新、GCJ-02 坐标转换和命名地点，提供命令行与异步 Python API。支持 Linux 和 Windows。
 
-根据电脑系统选择下面对应的说明。两种系统都需要通过 USB 连接 iPhone，解锁并信任电脑，在手机「设置 → 隐私与安全性」中开启开发者模式并完成重启确认。
+使用前通过 USB 连接 iPhone，解锁并信任电脑。
 
 ## Linux 使用方法
 
-### 安装与连接
+### 安装
 
-需要 Python 3.11+、[uv](https://docs.astral.sh/uv/) 和可用的 `usbmuxd` 服务。Arch Linux 可通过系统包管理器安装 `usbmuxd`；其他发行版请使用对应的软件包和服务管理方式。
+需要 Python 3.11+、[uv](https://docs.astral.sh/uv/) 和 `usbmuxd`。Arch Linux 可通过系统包管理器安装 `usbmuxd`。
 
 ```bash
 git clone --branch feat/windows-cli https://github.com/OMORI-GOHAN/iPhone-gps.git
 cd iPhone-gps
 uv sync --locked --extra device
-uv run --no-sync iphone-gps devices
 ```
 
 ### 开启开发者模式
 
-1. 手机打开「设置 → 隐私与安全性 → 开发者模式」。如果看不到该项，保持 USB 连接、解锁并信任电脑，在项目目录执行：
+手机打开「设置 → 隐私与安全性 → 开发者模式」。若找不到入口，在项目目录执行后重新打开手机设置：
 
-   ```bash
-   uv run gps developer-mode
-   ```
+```bash
+uv run gps developer-mode
+```
 
-2. 重新打开手机设置，开启「开发者模式」，按提示重启。
-3. 重启后解锁手机，在确认框中点「开启」，按提示输入锁屏密码。
+打开开发者模式开关，按提示重启。重启后解锁手机，在确认框中点「开启」，按提示输入锁屏密码。
 
-该命令只显示设置入口，不会自动开启或替你确认重启。多设备时加 `--device UDID`。
+### 启动通道
 
-### 启动通道与准备
-
-iOS 17 及以上需要在另一个终端启动开发者隧道，并保持该终端运行：
+iOS 17 及以上在一个终端启动通道，保持运行：
 
 ```bash
 uv run gps tunnel
 ```
 
-回到原终端检查准备状态：
+首次使用时，在另一个终端准备配对及开发者镜像，按手机提示操作（可能下载镜像）：
 
 ```bash
-uv run --no-sync iphone-gps doctor
+uv run gps prepare
 ```
 
-若提示需要配对或挂载 DDI，执行下面命令，并留意手机上的信任提示。此操作可能下载开发者镜像；完成后再次运行 `doctor` 检查。
+### 定位与保存地点
+
+纬度在前、经度在后。默认 WGS84；GCJ-02 坐标加 `--coord-system gcj02`。按 **Ctrl+C** 清除并退出。
 
 ```bash
-uv run --no-sync gps prepare
+uv run gps 35.714884 139.796644
+uv run gps --coord-system gcj02 28.169004 112.945261
 ```
 
-### 定位与地点管理
-
-输入纬度、经度开始定位，按 **Ctrl+C** 清除并退出。默认坐标系为 WGS84；GCJ-02 输入需显式指定：
+保存后可直接用名称定位：
 
 ```bash
-uv run --no-sync gps 35.714884 139.796644
-uv run --no-sync gps --coord-system gcj02 28.169004 112.945261
+uv run gps place save 湖南大学 --coord-system gcj02 28.169004 112.945261
+uv run gps 湖南大学
+uv run gps place list
+uv run gps place delete 湖南大学
 ```
-
-仅查看转换结果：
-
-```bash
-uv run --no-sync gps --dry-run --coord-system gcj02 28.169004 112.945261
-```
-
-保存地点后可直接使用名称定位：
-
-```bash
-uv run --no-sync gps place save 湖南大学 --coord-system gcj02 28.169004 112.945261
-uv run --no-sync gps 湖南大学
-uv run --no-sync gps place list
-uv run --no-sync gps place delete 湖南大学
-```
-
-更多参数见 `uv run --no-sync gps set --help` 和 `uv run --no-sync gps place --help`。设计与 Python API 约定见 [ARCHITECTURE.md](ARCHITECTURE.md)。
 
 ## Windows 使用方法
 
-### 安装与连接
+### 安装
 
-推荐使用 **Windows x64 独立测试包** `iphone-gps-windows-x64.zip`，自带 Python 和设备依赖，用户无需另装 Python 或 uv。当前测试包由项目构建生成，获取和构建方式见 [Windows 打包说明](packaging/README.md)。解压整个压缩包，保留程序旁的 `_internal` 文件夹。
-
-电脑需要 Apple USB 驱动和 **Apple Mobile Device Service**。在解压后的 `iphone-gps` 文件夹中打开普通 PowerShell，执行自动安装命令：
+使用 Windows x64 测试包 `iphone-gps-windows-x64.zip`，无需另装 Python 或 uv。解压整个压缩包，保留 `_internal` 文件夹。在程序文件夹打开普通 PowerShell，安装 Apple 设备组件：
 
 ```powershell
 .\iphone-gps.exe setup --install
 ```
 
-已有设备服务时会直接复用，或请求启动服务；缺少组件时从苹果官网下载约 200 MB 的安装包，校验苹果数字签名，提取并再次校验 `AppleMobileDeviceSupport64.msi`，然后打开苹果组件安装界面。确认管理员权限提示并按界面完成安装即可，无需完整安装 iTunes，也无需手动下载或解压。安装不会自动重启电脑；若提示需要重启，请完成重启后再连接手机。
-
-
-连接并解锁手机，在解压后的 `iphone-gps` 文件夹中打开普通 PowerShell，依次检查组件和设备：
-
-```powershell
-.\iphone-gps.exe setup
-.\iphone-gps.exe devices
-```
+按提示确认管理员权限并完成安装；若要求重启电脑，重启后再连接手机。测试包获取及构建方式见 [Windows 打包说明](packaging/README.md)。
 
 ### 开启开发者模式
 
-1. 手机打开「设置 → 隐私与安全性 → 开发者模式」。如果看不到该项，保持 USB 连接、解锁并信任电脑，在程序文件夹执行：
+手机打开「设置 → 隐私与安全性 → 开发者模式」。若找不到入口，在程序文件夹执行后重新打开手机设置：
 
-   ```powershell
-   .\iphone-gps.exe gps developer-mode
-   ```
+```powershell
+.\iphone-gps.exe gps developer-mode
+```
 
-2. 重新打开手机设置，开启「开发者模式」，按提示重启。
-3. 重启后解锁手机，在确认框中点「开启」，按提示输入锁屏密码。
+打开开发者模式开关，按提示重启。重启后解锁手机，在确认框中点「开启」，按提示输入锁屏密码。
 
-该命令通过 USB 显示入口，无需提前开启开发者模式或启动隧道，不会自动开启、重启或确认。多设备时加 `--device UDID`。此命令需使用包含本次更新的新构建；旧测试包若提示命令不存在，请更新测试包，或使用下方源码命令。
+`developer-mode` 需要包含该命令的新构建；旧包提示命令不存在时请更新。
 
-### 准备与检查
+### 准备设备
 
-`devices` 成功时会显示设备编号。首次连接或需要准备开发者镜像时运行：
+首次使用或重新开启开发者模式后运行，按手机提示操作（可能下载开发者镜像）：
 
 ```powershell
 .\iphone-gps.exe gps prepare
 ```
 
-留意手机上的信任和开发者模式提示。首次配对或启用开发者模式后，可能需要再次运行 `gps prepare`；此命令可能下载开发者镜像。
+Windows 独立程序会按需管理通道。出现管理员权限提示时确认，并在新打开的窗口中操作。
 
-iOS 17 及以上需要开发者隧道。独立程序在执行定位、清除或准备命令时按需管理隧道：已有隧道会直接复用；需要新建时会请求管理员权限，并通过 **Windows PowerShell** 执行命令。确认 Windows 权限提示后，在新窗口中操作。窗口外观仍由系统默认终端设置决定，可能由 Windows Terminal 承载。
+### 定位与保存地点
 
-可随时进行只读检查：
-
-```powershell
-.\iphone-gps.exe doctor
-```
-
-`doctor` 不自动启动隧道，因此尚未运行定位或准备命令时，隧道一项可能显示未就绪。
-
-### 定位与地点管理
-
-输入纬度、经度开始定位，在实际运行定位的窗口按 **Ctrl+C** 清除并退出。本程序创建的隧道会在定位清理后停止，外部已有隧道继续运行。
+纬度在前、经度在后。默认 WGS84；GCJ-02 坐标加 `--coord-system gcj02`。在实际运行定位的窗口按 **Ctrl+C** 清除并退出。
 
 ```powershell
 .\iphone-gps.exe gps set 35.714884 139.796644
 .\iphone-gps.exe gps set --coord-system gcj02 28.169004 112.945261
 ```
 
-仅查看转换结果、不连接手机：
-
-```powershell
-.\iphone-gps.exe gps set --dry-run --coord-system gcj02 28.169004 112.945261
-```
-
-保存与复用命名地点：
+保存后可直接用名称定位：
 
 ```powershell
 .\iphone-gps.exe gps place save 湖南大学 --coord-system gcj02 28.169004 112.945261
@@ -155,39 +110,6 @@ iOS 17 及以上需要开发者隧道。独立程序在执行定位、清除或�
 .\iphone-gps.exe gps place delete 湖南大学
 ```
 
-更多参数见 `.\iphone-gps.exe gps set --help` 和 `.\iphone-gps.exe gps place --help`。手机地图刷新和位置恢复可能有延迟，请在手机上确认；程序不读取手机实际位置。
+从源码运行时，先安装 Python 3.11+、uv 并执行 `uv sync --locked --extra device`，然后将上述 `.\iphone-gps.exe` 替换为 `.\.venv\Scripts\python.exe -m iphone_gps.windows`。
 
-### 从源码运行（开发者）
-
-需要 Python 3.11+ 和 uv。在 PowerShell 中执行：
-
-```powershell
-git clone --branch feat/windows-cli https://github.com/OMORI-GOHAN/iPhone-gps.git
-cd iPhone-gps
-uv sync --locked --extra device
-.\.venv\Scripts\python.exe -m iphone_gps.windows setup
-.\.venv\Scripts\python.exe -m iphone_gps.windows setup --install
-.\.venv\Scripts\python.exe -m iphone_gps.windows devices
-.\.venv\Scripts\python.exe -m iphone_gps.windows gps developer-mode
-```
-
-按上方教程在手机开启开发者模式并完成重启确认后，继续：
-
-```powershell
-.\.venv\Scripts\python.exe -m iphone_gps.windows gps prepare
-.\.venv\Scripts\python.exe -m iphone_gps.windows gps set 35.714884 139.796644
-```
-
-`python -m iphone_gps.windows` 使用与独立程序相同的 Windows 隧道管理入口。若直接使用 `.venv\Scripts\gps.exe` 或 `.venv\Scripts\iphone-gps.exe`，需自行在管理员 PowerShell 中启动隧道并保持运行：
-
-```powershell
-.\.venv\Scripts\python.exe -m pymobiledevice3 remote tunneld
-```
-
-连续更新示例使用手动启动的隧道：
-
-```powershell
-.\.venv\Scripts\python.exe examples/continuous_updates.py --interval 10
-```
-
-架构与 Python API 约定见 [ARCHITECTURE.md](ARCHITECTURE.md)，独立程序构建及验收步骤见 [Windows 打包说明](packaging/README.md)。
+更多参数使用 `--help` 查看。手机位置恢复及地图刷新可能有延迟。设计与 Python API 见 [ARCHITECTURE.md](ARCHITECTURE.md)。
