@@ -1,0 +1,90 @@
+name: Build release files
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['release/**']
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    name: Windows x64 package
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      PYTHONUTF8: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: '3.14'
+      - run: uv sync --locked --extra device
+      - run: uv run --no-sync python -m unittest discover -s tests -v
+      - name: Install pinned packaging tools
+        run: uv pip install --python .venv/Scripts/python.exe -r packaging/requirements-windows.txt
+      - name: Build and verify executable
+        shell: powershell
+        run: ./packaging/build-windows.ps1
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: windows-release
+          path: dist/iphone-gps-windows-x64.zip
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30
+
+  draft:
+    name: Prepare release draft
+    needs: [windows, python]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: prepare-release-draft
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PYTHONUTF8: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: '*-release'
+          path: release-files
+          merge-multiple: true
+      - name: Verify files and upload draft attachments
+        run: python packaging/prepare_release.py --repo "$GITHUB_REPOSITORY" --commit "$GITHUB_SHA" --folder release-files
+
+  python:
+    name: Python wheel and source
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PYTHONUTF8: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: '3.14'
+      - run: uv build
+      - name: Verify installed wheel
+        shell: bash
+        run: |
+          uv venv /tmp/iphone-gps-wheel
+          uv pip install --python /tmp/iphone-gps-wheel/bin/python dist/*.whl
+          cd /tmp
+          /tmp/iphone-gps-wheel/bin/gps --help
+          /tmp/iphone-gps-wheel/bin/gps --dry-run 35.714884 139.796644
+          /tmp/iphone-gps-wheel/bin/gps developer-mode --help
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: python-release
+          path: |
+            dist/*.whl
+            dist/*.tar.gz
+          if-no-files-found: error
+          retention-days: 30

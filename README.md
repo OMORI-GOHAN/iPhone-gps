@@ -11,7 +11,7 @@
 需要 Python 3.11+、[uv](https://docs.astral.sh/uv/) 和 `usbmuxd`。Arch Linux 可通过系统包管理器安装 `usbmuxd`。
 
 ```bash
-git clone --branch feat/windows-cli https://github.com/OMORI-GOHAN/iPhone-gps.git
+git clone --branch v0.1.0 https://github.com/OMORI-GOHAN/iPhone-gps.git
 cd iPhone-gps
 uv sync --locked --extra device
 ```
@@ -62,9 +62,9 @@ uv run gps place delete 湖南大学
 
 ### 安装
 
-测试包获取及构建方式见 [Windows 打包说明](packaging/README.md)。
+从 [Releases](https://github.com/OMORI-GOHAN/iPhone-gps/releases) 下载 `iphone-gps-windows-x64.zip`。构建方式见 [Windows 打包说明](packaging/README.md)。
 
-使用 Windows x64 测试包 `iphone-gps-windows-x64.zip`。解压整个压缩包，保留 `_internal` 文件夹。在程序文件夹打开普通 PowerShell，安装 Apple 设备组件：
+解压整个压缩包，保留 `_internal` 文件夹。在程序文件夹打开普通 PowerShell，安装 Apple 设备组件：
 
 ```powershell
 .\iphone-gps.exe setup --install
