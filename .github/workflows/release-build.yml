@@ -35,6 +35,30 @@ jobs:
           compression-level: 0
           retention-days: 30
 
+  draft:
+    name: Prepare release draft
+    needs: [windows, python]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: prepare-release-draft
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PYTHONUTF8: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: '*-release'
+          path: release-files
+          merge-multiple: true
+      - name: Verify files and upload draft attachments
+        run: python packaging/prepare_release.py --repo "$GITHUB_REPOSITORY" --commit "$GITHUB_SHA" --folder release-files
+
   python:
     name: Python wheel and source
     runs-on: ubuntu-latest
